@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercício do Alien</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style> body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; } </style>
+</head>
+
+<body>
+    <script>
+        // define a dimensões do jogo, largura de 700 pixels e altura de 850 pixels 
+        const larguraJogo = 700;
+        const alturaJogo = 850;
+
+        // define objeto que passará para criação do jogo
+        const config = {
+            type: Phaser.AUTO, //escolhe a rederização  para o ambiente do navegador 
+            width: larguraJogo, //configura largura 
+            height: alturaJogo, //configura altura 
+
+            physics: { //configura a física do jogo
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 300}, //gavridade do jogo para eixo Y
+                    debug: true //ativa modo de depuraão da física, para visualizar a colisão 
+                }
+            },
+
+            scene: { //funções do clico do jogo
+                preload: preload, //pré-carregamento, carregar recursos do jogo, como imagnes e sons 
+                create: create,//configura os elementos iniciais do jogo
+                update: update //atualiza a lógica do jogo, como movimento de personagem 
+            }
+        };
+
+    
+        const game = new Phaser.Game(config); //cria uma nova instância do jogo
+
+        //declaração das variáves para representar os elementos do joguinho
+        var alien;
+        var teclado;
+        var fogo;
+        var plataformas = []; //criando a lista 
+        var moeda;
+        var pontuacao = 0;
+        var placar; 
+        var planeta;
+        
+      
+
+        function preload() { //carrega os recusrsos do jogo, as imagnes
+            this.load.image('background', 'assets/bg.png');
+            this.load.image('player','assets/alienigena.png');
+            this.load.image('turbo_nave', 'assets/turbo.png');
+            this.load.image('plataforma_tijolo','assets/tijolos.png');
+            this.load.image('moeda', 'assets/moeda.png');
+            this.load.image('planeta2', 'assets/planeta3.png');
+
+        }
+
+        function create() {  //é a criação de elementos visuais e interativos a cena, como posicionamneto de elementos, definição de interações...
+            
+            this.add.image(larguraJogo/2, alturaJogo/2, 'background'); // cria a imagem de fundo
+
+            // cria e inicializa um sprite para representar o fogo na nave 
+            fogo = this.add.sprite(0,0, 'turbo_nave');
+            fogo.setVisible(false);
+
+            alien = this.physics.add.sprite(larguraJogo/2, 0, 'player');
+            alien.setCollideWorldBounds(true); //ativar "limites fisicos" das bordas da tela do jogo
+
+            teclado = this.input.keyboard.createCursorKeys(); //Cria um objeto para lidar com a entrada do teclado, especialmente as teclas de seta.
+
+            //elementos que estão dentro da lista 
+           plataformas.push(this.physics.add.staticImage(larguraJogo/2, alturaJogo/2, 'plataforma_tijolo'));
+           plataformas.push(this.physics.add.staticImage(larguraJogo-100, alturaJogo/4, 'plataforma_tijolo')); //para criar plataforma na tela 
+           plataformas.push(this.physics.add.staticImage(larguraJogo/5, alturaJogo/5, 'planeta2')); 
+           
+
+            //falar oq vc quer que aconteça com elementos na lista, no caso a colisão, [0] para falar a posição da lista
+            this.physics.add.collider(alien, plataformas[0]); //estabelecer colisão entre plataforma e allien
+            this.physics.add.collider(alien, plataformas[1]);
+            this.physics.add.collider(alien, plataformas[2]);
+
+            // adicionando moeda 
+            moeda = this.physics.add.sprite(larguraJogo/2, 0, 'moeda'); 
+            moeda.setCollideWorldBounds(true); //ativando as barreiras 
+            moeda.setBounce(0.7); //o movimento de "quicar" da moeda, 0.7 é a quantidade de enrgia que a moeda tem apos a colisão 
+            this.physics.add.collider(moeda,plataformas[0]); // faz com que a moeda colida na plataforma 
+
+            // adicionando placar 
+            placar = this.add.text(50, 50, 'Moedas:' + pontuacao, {fontSize:'45px', fill:'#495613'});
+            
+            //quando o alien encostar na moeda 
+            this.physics.add.overlap(alien, moeda, function(){
+                moeda.setVisible(false); // quando overlap for detectado moeda fica "invisivel"
+                var posicaoMoeda_Y = Phaser.Math.RND.between(50, 650); //sprteia numero 
+                moeda.setPosition(posicaoMoeda_Y, 100); //ajusta a posição da moeda 
+                pontuacao +=1; //soma +1 ao valor atual da pontuação
+                placar.setText('Moedas:' +pontuacao); //atualiza texto do placar 
+                moeda.setVisible(true); //ativa a visão da "nova moeda"
+
+            }
+            );
+            
+        }
+
+        function update() { //atualiza a logiva do jog, dentro dessa função controla o movimento do alien, ativação do turbo, posições...
+            // movimento para esquerda 
+            if (teclado.left.isDown) { //verifica se a tecla de seta para esquerda esta pressionada
+                alien.setVelocityX(-150); } //se tiver precionada define a velocidade 
+
+                //movimento para direita 
+                else if (teclado.right.isDown) { //se a tecla da esquerda não tiver pressionada, verifique se a tecla da seta da direita esta 
+                    alien.setVelocityX(150); } //se tiver pressionada a da direita define a velocidade 
+
+                   
+                    else {alien.setVelocityX(0)} //se nenhuma tecla tiver precionada, define a velocidade do alien como 0
+
+                    //movimento para cima 
+                    if (teclado.up.isDown){ //verifica se a teclada para cima esta precionada 
+                        alien.setVelocityY(-150); //se tiver precionada define velocidade 
+                        ativarTurbo(); } //ativa a função de chamar o turbo ai ele aparece no alien
+
+                        //movimento para baixo (gravidade em y )
+                        else { semTurbo(); } //se a tecla de cima nao estiver precionada ai não aparece o turbo 
+                            //ação da gravidade do jogo em y
+                        
+
+                        fogo.setPosition(alien.x, alien.y + alien.height/2); //atuaaliza a ppsição do fogo em relação ao alien, determina que o fogo se posicione no mesmo y de aleine 
+        }
+        //o setVisible para controlar a visibilidade do efeito turbo
+        function ativarTurbo(){
+            fogo.setVisible(true); //controla para deixar a imagem ativada 
+        }
+
+        function semTurbo(){
+            fogo.setVisible(false); //controla para deixar a imagem desativada (false)
+        }
+
+    </script>
+</body>
+</html>
